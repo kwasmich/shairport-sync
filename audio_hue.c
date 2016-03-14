@@ -300,7 +300,7 @@ static int init(int argc, char **argv) {
     lamp = malloc(sizeof(lamp_t) * hueLampCount);
 
     // FFT
-    static const char wisdomString[] = "(fftw-3.3.2 fftwf_wisdom #xca4daf64 #xc8f59ea6 #x586875c9 #x14018994"
+    static const char wisdomString[] = "(fftw-3.3.4 fftwf_wisdom #xca4daf64 #xc8f59ea6 #x586875c9 #x14018994"
                                        "  (fftwf_codelet_r2cf_32 0 #x1040 #x1040 #x0 #xf0a3d344 #x13d3ea67 #x6c559355 #xb97dd65d)"
                                        "  (fftwf_codelet_hc2cf_32 0 #x1040 #x1040 #x0 #xe9ef8750 #xcfc97096 #xf9e7e48d #x6e5a4034)"
                                        "  (fftwf_codelet_r2cfII_32 2 #x1040 #x1040 #x0 #x328c26e0 #xd5defb3b #x3f890bcb #xae29c390)"
