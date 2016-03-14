@@ -54,6 +54,15 @@ extern audio_output audio_pipe;
 #ifdef CONFIG_STDOUT
 extern audio_output audio_stdout;
 #endif
+#ifdef CONFIG_GL
+extern audio_output audio_gl;
+#endif
+#ifdef CONFIG_HUE
+extern audio_output audio_hue;
+#endif
+#ifdef CONFIG_I2C
+extern audio_output audio_i2c;
+#endif
 
 static audio_output *outputs[] = {
 #ifdef CONFIG_ALSA
@@ -79,6 +88,15 @@ static audio_output *outputs[] = {
 #endif
 #ifdef CONFIG_DUMMY
     &audio_dummy,
+#endif
+#ifdef CONFIG_GL
+    &audio_gl,
+#endif
+#ifdef CONFIG_HUE
+    &audio_hue,
+#endif
+#ifdef CONFIG_I2C
+    &audio_i2c,
 #endif
     NULL};
 
