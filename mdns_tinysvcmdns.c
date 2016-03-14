@@ -66,8 +66,6 @@ static int mdns_tinysvcmdns_register(char *apname, int port) {
     return -1;
   }
 
-  ifa = ifalist;
-
   // Look for an ipv4/ipv6 non-loopback interface to use as the main one.
   for (ifa = ifalist; ifa != NULL; ifa = ifa->ifa_next) {
     if (!(ifa->ifa_flags & IFF_LOOPBACK) && ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_INET) {

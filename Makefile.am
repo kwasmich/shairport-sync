@@ -46,6 +46,18 @@ if USE_PULSE
 shairport_sync_SOURCES += audio_pulse.c
 endif
 
+if USE_GL
+shairport_sync_SOURCES += audio_gl.c GLESVisualizer/Arabesque.c GLESVisualizer/colorspace.c GLESVisualizer/eglcore.c GLESVisualizer/encoding.c GLESVisualizer/glcore.c GLESVisualizer/noise.c GLESVisualizer/OpenGLES2Core.c GLESVisualizer/FreeType3D.c GLESVisualizer/globaltime.c GLESVisualizer/simpleJPEG.c GLESVisualizer/simplePNG.c
+endif
+
+if USE_HUE
+shairport_sync_SOURCES += audio_hue.c
+endif
+
+if USE_I2C
+shairport_sync_SOURCES += audio_i2c.c
+endif
+
 if USE_DNS_SD
 shairport_sync_SOURCES += mdns_dns_sd.c
 endif
