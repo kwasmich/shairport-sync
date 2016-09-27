@@ -59,6 +59,9 @@ extern audio_output audio_hue;
 #ifdef CONFIG_I2C
 extern audio_output audio_i2c;
 #endif
+#ifdef CONFIG_SPP
+extern audio_output audio_spp;
+#endif
 
 static audio_output *outputs[] = {
 #ifdef CONFIG_SNDIO
@@ -90,6 +93,9 @@ static audio_output *outputs[] = {
 #endif
 #ifdef CONFIG_I2C
     &audio_i2c,
+#endif
+#ifdef CONFIG_SPP
+    &audio_spp,
 #endif
     NULL};
 

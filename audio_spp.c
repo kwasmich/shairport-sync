@@ -34,7 +34,6 @@
 #include <fftw3.h>
 #include <iso646.h>
 #include <limits.h>
-#include <linux/i2c-dev.h>
 #include <math.h>
 #include <pthread.h>
 #include <signal.h>
@@ -44,6 +43,10 @@
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <unistd.h>
+
+#include <sys/socket.h>
+#include <bluetooth/bluetooth.h>
+#include <bluetooth/rfcomm.h>
 
 
 
@@ -63,9 +66,8 @@ static const float MAX_R = 255.0f;
 static const float MAX_G = 63.0f;
 static const float MAX_B = 23.0f;
 
-static char* s_device = NULL;
-static int s_fd = 0;
-static uint8_t s_addr = 0;
+static char* s_address = NULL;
+static int s_socket = 0;
 static bool s_idle = true;
 
 
@@ -75,14 +77,11 @@ static void setIdle(const bool in_IDLE) {
 
 
 
-static void commitI2C(const uint8_t in_R, const uint8_t in_G, const uint8_t in_B) {
+static void commitSPP(const uint8_t in_R, const uint8_t in_G, const uint8_t in_B) {
     // state of the light strip
-    static uint8_t rgb[6] = { 'r', 1, 'g', 1, 'b', 1 };
-    rgb[1] = in_R;
-    rgb[3] = in_G;
-    rgb[5] = in_B;
-    
-    write(s_fd, rgb, 6);
+    static uint8_t rgbw[10];
+    sprintf(rgbw, "#%02x%02x%02x%02x", in_R, in_G, in_B, 0);
+    write(s_socket, rgbw, 10);
 }
 
 
@@ -175,7 +174,7 @@ static void draw() {
         uint8_t gg = dg;
         uint8_t bb = db;
 
-        commitI2C(rr, gg, bb);
+        commitSPP(rr, gg, bb);
 
         idleCounter++;
 
@@ -192,7 +191,7 @@ static void draw() {
         uint8_t gg = dg;
         uint8_t bb = db;
 
-        commitI2C(rr, gg, bb);
+        commitSPP(rr, gg, bb);
 
 
         for (c = 0; c < 3; c++) {
@@ -212,7 +211,7 @@ static pthread_t s_renderingThread;
 static bool s_renderingThreadAlive = true;
 
 
-static void *i2cThread(void *argument) {
+static void *sppThread(void *argument) {
     while (s_renderingThreadAlive) {
         draw();
         usleep(20000);   // 50Hz
@@ -251,7 +250,7 @@ static void doit() {
         }
     }
 
-    // I2C
+    // SPP
     {
         float mu = 0;
 
@@ -284,8 +283,7 @@ uint64_t starttime, samples_played;
 
 
 static void help(void) {
-    puts("    -d device           path to the i2c device like \"/dev/i2c-1\"");
-    puts("    -a address          the address of the I2C device");
+    puts("    -d address           address of the paired bluetooth spp device like \"01:23:45:67:89:ab\"");
 }
 
 
@@ -301,11 +299,7 @@ static int init(int argc, char **argv) {
     while ((opt = getopt(argc, argv, "d:a:")) > 0) {
         switch (opt) {
             case 'd':
-                s_device = optarg;
-                break;
-
-            case 'a':
-                s_addr = strtol(optarg, NULL, 16);
+                s_address = optarg;
                 break;
 
             default:
@@ -318,12 +312,8 @@ static int init(int argc, char **argv) {
         die("Invalid audio argument: %s", argv[optind]);
     }
 
-    if (!s_device) {
-        die("device path missing!");
-    }
-    
-    if (!s_addr) {
-        die("I2C address missing!");
+    if (!s_address) {
+        die("bluetooth spp device address missing!");
     }
 
     buffer = malloc(sizeof(short) * N * 2);
@@ -331,12 +321,12 @@ static int init(int argc, char **argv) {
 
     // FFT
     static const char wisdomString[] = "(fftw-3.3.4 fftwf_wisdom #xca4daf64 #xc8f59ea6 #x586875c9 #x14018994"
-                                       "  (fftwf_codelet_r2cf_32 0 #x1040 #x1040 #x0 #xf0a3d344 #x13d3ea67 #x6c559355 #xb97dd65d)"
-                                       "  (fftwf_codelet_hc2cf_32 0 #x1040 #x1040 #x0 #xe9ef8750 #xcfc97096 #xf9e7e48d #x6e5a4034)"
-                                       "  (fftwf_codelet_r2cfII_32 2 #x1040 #x1040 #x0 #x328c26e0 #xd5defb3b #x3f890bcb #xae29c390)"
-                                       "  (fftwf_rdft_vrank_geq1_register 1 #x1040 #x1040 #x0 #x24270b46 #x2c4e5fb2 #x7c394654 #x3261a5dd)"
-                                       "  (fftwf_codelet_r2cf_32 2 #x1040 #x1040 #x0 #xbfa7b557 #xfc0285f7 #xc081451b #xd3d93d06)"
-                                       ")";
+    "  (fftwf_codelet_r2cf_32 0 #x1040 #x1040 #x0 #xf0a3d344 #x13d3ea67 #x6c559355 #xb97dd65d)"
+    "  (fftwf_codelet_hc2cf_32 0 #x1040 #x1040 #x0 #xe9ef8750 #xcfc97096 #xf9e7e48d #x6e5a4034)"
+    "  (fftwf_codelet_r2cfII_32 2 #x1040 #x1040 #x0 #x328c26e0 #xd5defb3b #x3f890bcb #xae29c390)"
+    "  (fftwf_rdft_vrank_geq1_register 1 #x1040 #x1040 #x0 #x24270b46 #x2c4e5fb2 #x7c394654 #x3261a5dd)"
+    "  (fftwf_codelet_r2cf_32 2 #x1040 #x1040 #x0 #xbfa7b557 #xfc0285f7 #xc081451b #xd3d93d06)"
+    ")";
 
     in = (float *) fftwf_malloc(sizeof(float) * N);
     out = (fftwf_complex *) fftwf_malloc(sizeof(fftwf_complex) * N);
@@ -348,16 +338,21 @@ static int init(int argc, char **argv) {
     //fputs( fftwf_export_wisdom_to_string(), stderr );
 
 
-    // I2C
-    s_fd = open(s_device, O_WRONLY);
-    assert(s_fd >= 0);
-    
-    int err = ioctl(s_fd, I2C_SLAVE, s_addr); // i2c addres
-    assert(err >= 0);
+    // SPP
+    s_socket = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
+    assert(s_socket >= 0);
 
-    commitI2C(1, 1, 1);
+    struct sockaddr_rc addr = { 0 };
+    addr.rc_family = AF_BLUETOOTH;
+    addr.rc_channel = (uint8_t) 1;
+    str2ba(s_address, &addr.rc_bdaddr);
 
-    int rc = pthread_create(&s_renderingThread, NULL, i2cThread, NULL);
+    int status = connect(s_socket, (struct sockaddr *)&addr, sizeof(addr));
+    assert(status >= 0);
+
+    commitSPP(1, 1, 1);
+
+    int rc = pthread_create(&s_renderingThread, NULL, sppThread, NULL);
     assert(0 == rc);
 
     return 0;
@@ -372,12 +367,12 @@ static void deinit(void) {
     free(outL);
     free(outR);
     free(buffer);
-    
+
     s_renderingThreadAlive = false;
     pthread_join(s_renderingThread, NULL);
-    commitI2C(0, 0, 0);
-    
-    int err = close(s_fd);
+    commitSPP(0, 0, 0);
+
+    int err = close(s_socket);
     assert(err >= 0);
 }
 
@@ -387,7 +382,7 @@ static void start(int sample_rate) {
     Fs = sample_rate;
     starttime = 0;
     samples_played = 0;
-    printf("I2C output started at Fs=%d Hz\n", sample_rate);
+    printf("SPP output started at Fs=%d Hz\n", sample_rate);
     setIdle(false);
 }
 
@@ -406,30 +401,30 @@ static void play(short buf[], int samples) {
     uint64_t nowtime;
     int i = 0;
     gettimeofday(&tv, NULL);
-    
+
     if (!starttime) {
         nowtime = tv.tv_usec + 1000000 * tv.tv_sec;
         starttime = nowtime;
     }
-    
+
     while (i < samples) {
         buffer[bufferFill] = buf[i];
         bufferFill++;
-        
+
         if (bufferFill == N * 2) {
             doit();
             bufferFill = 0;
-            
+
             samples_played += N * 2;
             uint64_t finishtime = starttime + samples_played * 1000000 / Fs;
             nowtime = tv.tv_usec + 1000000 * tv.tv_sec;
             int sleepDuration = (int)(finishtime - nowtime);
-            
+
             if (sleepDuration > 0) {
                 usleep(sleepDuration);
             }
         }
-        
+
         i++;
     }
 }
@@ -438,13 +433,13 @@ static void play(short buf[], int samples) {
 
 static void stop(void) {
     setIdle(true);
-    printf("I2C stopped\n");
+    printf("SPP stopped\n");
 }
 
 
 
-audio_output audio_i2c = {
-    .name = "i2c",
+audio_output audio_spp = {
+    .name = "spp",
     .help = &help,
     .init = &init,
     .deinit = &deinit,

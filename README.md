@@ -10,6 +10,7 @@ This fork of ShairPort-Sync adds three new audio output devices and is aiming at
 * [hue](http://www.meethue.com/)
 * [OpenGL|ES 2](http://www.khronos.org/opengles/)
 * I2C for my LED strip HAT [TinyLEDStripPWM](https://github.com/kwasmich/TinyLEDStripPWM)
+* Bluetooth SPP for my IR and Bluetooth LED strip controler [TinyLEDStripPWM](https://github.com/kwasmich/)
 
 Actually those devices do not output any audio but are supporting the ambient created by music.
 
@@ -22,6 +23,7 @@ Required:
 * curl
 * libpng
 * jpeglib
+* libbluetooth
 
 
 Debian/Raspbian users can get the basics with
@@ -52,7 +54,7 @@ How to get started
 ------------------
 ```
 autoreconf -i -f
-./configure CFLAGS='-I/opt/vc/include -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux' LDFLAGS='-L/opt/vc/lib' --with-gl --with-hue --with-i2c --with-alsa --with-avahi --with-ssl=openssl --with-metadata --with-soxr --with-systemd
+./configure CFLAGS='-I/opt/vc/include -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux' LDFLAGS='-L/opt/vc/lib' --with-gl --with-hue --with-i2c --with-spp --with-alsa --with-avahi --with-ssl=openssl --with-metadata --with-soxr --with-systemd
 make
 ./shairport-sync -a 'My Shairport Name'
 ```
@@ -98,4 +100,16 @@ More details can be found on my [TinyLEDStripPWM](https://github.com/kwasmich/Ti
 
 ```
 shairport-sync -o i2c -- -d /dev/i2c-1 -a 0x3f
+```
+
+
+
+Bluetooth SPP Audio Output
+--------------------------
+This is very special as it requires you to create your own driver board for analogue 12V LED stripes.
+
+More details can be found on my [MegaLEDController](https://github.com/kwasmich/MegaLEDController) project page. 
+
+```
+shairport-sync -o spp -- -d 01:23:45:67:89:ab
 ```
