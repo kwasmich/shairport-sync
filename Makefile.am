@@ -83,6 +83,10 @@ if USE_I2C
 shairport_sync_SOURCES += audio_i2c.c
 endif
 
+if USE_SPP
+shairport_sync_SOURCES += audio_spp.c
+endif
+
 if USE_DNS_SD
 shairport_sync_SOURCES += mdns_dns_sd.c
 endif

@@ -295,6 +295,15 @@ AC_ARG_WITH(i2c, [  --with-i2c = choose I2C API support.], [
   AC_CHECK_LIB([fftw3f], [fftwf_malloc], , AC_MSG_ERROR(I2C support requires the libfftw3-dev library!))], )
 AM_CONDITIONAL([USE_I2C], [test "x$HAS_I2C" = "x1"])
 
+# Look for spp flag
+AC_ARG_WITH(spp, [  --with-spp = choose Bluetooth SPP API support.], [
+AC_MSG_RESULT(>>Including a Bluetooth SPP back end.)
+HAS_SPP=1
+AC_DEFINE([CONFIG_SPP], 1, [Needed by the compiler.])
+AC_CHECK_LIB([fftw3f], [fftwf_malloc], , AC_MSG_ERROR(Bluetooth SPP support requires the libfftw3-dev library!))
+AC_CHECK_LIB([bluetooth], [bt_free], , AC_MSG_ERROR(Bluetooth SPP support requires the libbluetooth-dev library!))], )
+AM_CONDITIONAL([USE_SPP], [test "x$HAS_SPP" = "x1"])
+
 # Look for dns_sd flag
 AC_ARG_WITH(dns_sd, [  --with-dns_sd = choose dns_sd mDNS support], [
   AC_MSG_RESULT(>>Including dns_sd for mDNS support)
