@@ -40,6 +40,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -80,8 +81,18 @@ static void setIdle(const bool in_IDLE) {
 static void commitSPP(const uint8_t in_R, const uint8_t in_G, const uint8_t in_B) {
     // state of the light strip
     static uint8_t rgbw[10];
+    static uint8_t prev[10];
     sprintf(rgbw, "#%02x%02x%02x%02x", in_R, in_G, in_B, 0);
-    write(s_socket, rgbw, 10);
+
+    int cmp = strncmp(prev, rgbw, 10);
+
+    if (cmp != 0) {
+        memcpy(prev, rgbw, 10);
+
+        ssize_t numBytes = write(s_socket, rgbw, 10);
+        printf("%s\n", rgbw);
+        assert(numBytes == 10);
+    }
 }
 
 
@@ -214,7 +225,7 @@ static bool s_renderingThreadAlive = true;
 static void *sppThread(void *argument) {
     while (s_renderingThreadAlive) {
         draw();
-        usleep(20000);   // 50Hz
+        usleep(40000);   // 25Hz
     }
 
     return NULL;
