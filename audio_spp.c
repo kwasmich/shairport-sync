@@ -90,7 +90,7 @@ static void commitSPP(const uint8_t in_R, const uint8_t in_G, const uint8_t in_B
         memcpy(prev, rgbw, 10);
 
         ssize_t numBytes = write(s_socket, rgbw, 10);
-        printf("%s\n", rgbw);
+        //printf("%s\n", rgbw);
         assert(numBytes == 10);
     }
 }
