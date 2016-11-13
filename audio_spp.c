@@ -69,6 +69,7 @@ static const float MAX_B = 23.0f;
 
 static char* s_address = NULL;
 static int s_socket = 0;
+static uint8_t s_channel = 0;
 static bool s_idle = true;
 
 
@@ -76,6 +77,32 @@ static void setIdle(const bool in_IDLE) {
     s_idle = in_IDLE;
 }
 
+
+static void openSocket() {
+    puts("opening socket...");
+    int sock = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
+    assert(sock >= 0);
+
+    struct sockaddr_rc addr = { 0 };
+    addr.rc_family = AF_BLUETOOTH;
+    s_channel++;
+    addr.rc_channel = s_channel;
+    str2ba(s_address, &addr.rc_bdaddr);
+
+    puts("connecting...");
+    int status = connect(sock, (struct sockaddr *)&addr, sizeof(addr));
+    assert(status >= 0);
+
+    s_socket = sock;
+}
+
+
+static void closeSocket() {
+    puts("closing socket...");
+    int err = close(s_socket);
+    assert(err >= 0);
+    s_socket = 0;
+}
 
 
 static void commitSPP(const uint8_t in_R, const uint8_t in_G, const uint8_t in_B) {
@@ -91,7 +118,17 @@ static void commitSPP(const uint8_t in_R, const uint8_t in_G, const uint8_t in_B
 
         ssize_t numBytes = write(s_socket, rgbw, 10);
         //printf("%s\n", rgbw);
-        assert(numBytes == 10);
+        //assert(numBytes == 10);
+
+        if (numBytes != 10) {
+            printf("%zd - ", numBytes);
+            puts("recovering...");
+            closeSocket();
+            openSocket();
+
+            ssize_t numBytes = write(s_socket, rgbw, 10);
+            assert(numBytes == 10);
+        }
     }
 }
 
@@ -350,16 +387,7 @@ static int init(int argc, char **argv) {
 
 
     // SPP
-    s_socket = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
-    assert(s_socket >= 0);
-
-    struct sockaddr_rc addr = { 0 };
-    addr.rc_family = AF_BLUETOOTH;
-    addr.rc_channel = (uint8_t) 1;
-    str2ba(s_address, &addr.rc_bdaddr);
-
-    int status = connect(s_socket, (struct sockaddr *)&addr, sizeof(addr));
-    assert(status >= 0);
+    openSocket();
 
     commitSPP(1, 1, 1);
 
@@ -383,8 +411,7 @@ static void deinit(void) {
     pthread_join(s_renderingThread, NULL);
     commitSPP(0, 0, 0);
 
-    int err = close(s_socket);
-    assert(err >= 0);
+    closeSocket();
 }
 
 
