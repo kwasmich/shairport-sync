@@ -429,12 +429,45 @@ static void updateNowPlaying() {
         snprintf(nowPlaying, 2048, "%s\n%s\n%s", title, artist, album);
 
         setString(nowPlaying);
+        setArtwork(NULL, 0);
     }
-    
-    if ((prevArtworkSize != s_metaArtworkSize) || (strncmp(s_metaArtwork, prevArtwork, 128) != 0)) {
+
+    if ((prevArtworkSize != s_metaArtworkSize) || (s_metaArtwork && prevArtwork && (strncmp(s_metaArtwork, prevArtwork, 128) != 0))) {
         memcpy(prevArtwork, s_metaArtwork, s_metaArtworkSize);
         prevArtworkSize = s_metaArtworkSize;
         setArtwork(prevArtwork, prevArtworkSize);
+        update = true;
+    }
+
+    if (update) {
+        if (s_metaTitle) {
+            strncpy(prevTitle, s_metaTitle, 255);
+        } else {
+            prevTitle[0] = '-';
+            prevTitle[1] = '\0';
+        }
+
+        if (s_metaArtist) {
+            strncpy(prevArtist, s_metaArtist, 255);
+        } else {
+            prevArtist[0] = '-';
+            prevArtist[1] = '\0';
+        }
+
+        if (s_metaAlbum) {
+            strncpy(prevAlbum, s_metaAlbum, 255);
+        } else {
+            prevAlbum[0] = '-';
+            prevAlbum[1] = '\0';
+        }
+
+        const char *title = (prevTitle[0]) ? prevTitle : "-";
+        const char *artist = (prevArtist[0]) ? prevArtist : "-";
+        const char *album = (prevAlbum[0]) ? prevAlbum : "-";
+        char nowPlaying[2048];
+        snprintf(nowPlaying, 2048, "%s\n%s\n%s", title, artist, album);
+
+        setString(nowPlaying);
     }
 }
 
