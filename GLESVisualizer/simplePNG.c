@@ -12,6 +12,7 @@
 #include <png.h>
 
 #include <stdlib.h>
+#include <string.h>
 
 
 bool pngIsPNG(const uint8_t * const in_PNG_DATA) {

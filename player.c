@@ -1201,6 +1201,21 @@ static inline int32_t mean_32(int32_t a, int32_t b) {
   return r;
 }
 
+
+inline int32_t min(int32_t a, int32_t b, int32_t c) {
+    if (b < a) a = b;
+    if (c < a) a = c;
+    return a;
+}
+
+
+inline int32_t max(int32_t a, int32_t b, int32_t c) {
+    if (b > a) a = b;
+    if (c > a) a = c;
+    return a;
+}
+
+
 // this takes an array of signed 32-bit integers and (a) removes or inserts a frame as specified in
 // stuff,
 // (b) multiplies each sample by the fixedvolume (a 16-bit quantity)
@@ -1220,10 +1235,42 @@ static int stuff_buffer_basic_32(int32_t *inptr, int length, enum sps_format_t l
 
   int i;
   int stuffsamp = length;
-  if (tstuff)
-    //      stuffsamp = rand() % (length - 1);
-    stuffsamp =
-        (rand() % (length - 2)) + 1; // ensure there's always a sample before and after the item
+
+    if (tstuff) {
+        int32_t minDelta = INT32_MAX;
+        int32_t maxDelta = 0;
+        int minPos = 0;
+        int maxPos = 0;
+
+        for (int i = 2; i < length; i++) {
+            int32_t minL = min(inptr[(i - 2) * 2], inptr[(i - 1) * 2], inptr[(i - 0) * 2]);
+            int32_t maxL = max(inptr[(i - 2) * 2], inptr[(i - 1) * 2], inptr[(i - 0) * 2]);
+            int32_t minR = min(inptr[(i - 2) * 2 + 1], inptr[(i - 1) * 2 + 1], inptr[(i - 0) * 2 + 1]);
+            int32_t maxR = max(inptr[(i - 2) * 2 + 1], inptr[(i - 1) * 2 + 1], inptr[(i - 0) * 2 + 1]);
+            int32_t deltaL = maxL - minL;
+            int32_t deltaR = maxR - minR;
+            int32_t deltaSum = (deltaL >> 1) + (deltaR >> 1);
+
+            if (deltaSum < minDelta) {
+                minDelta = deltaSum;
+                minPos = i - 1;
+            }
+
+            if (deltaSum > maxDelta) {
+                maxDelta = deltaSum;
+                maxPos = i - 1;
+            }
+        }
+
+        if (minDelta < (1 << 20)) {
+            stuffsamp = minPos;
+        } else if (maxDelta > (1 << 30)) {
+            stuffsamp = maxPos;
+        } else {
+            stuffsamp = length;
+            tstuff = 0;
+        }
+    }
 
   pthread_mutex_lock(&conn->vol_mutex);
   for (i = 0; i < stuffsamp; i++) { // the whole frame, if no stuffing
@@ -1628,6 +1675,9 @@ static void *player_thread_func(void *arg) {
 	
 	player_volume(config.airplay_volume,conn);
 	
+  int rolling_sync_error[16] = {};
+  uint8_t rolling_sync_error_idx = 0;
+
   uint64_t tens_of_seconds = 0;
   while (!conn->player_thread_please_stop) {
     abuf_t *inframe = buffer_get_frame(conn);
@@ -1839,6 +1889,20 @@ static void *player_thread_func(void *arg) {
                 delay - (config.latency * conn->output_sample_ratio +
                          (int64_t)(config.audio_backend_latency_offset *
                                    config.output_rate)); // int64_t from int64_t - int32_t, so okay
+
+              {
+                  rolling_sync_error[rolling_sync_error_idx] = sync_error;
+                  rolling_sync_error_idx++;
+                  rolling_sync_error_idx &= 0x0f;
+
+                  int sum = 0;
+
+                  for (int i = 0; i < 16; i++) {
+                      sum += rolling_sync_error[i];
+                  }
+                  
+                  sync_error = sum / 16;
+              }
 
             // not too sure if abs() is implemented for int64_t, so we'll do it manually
             int64_t abs_sync_error = sync_error;
