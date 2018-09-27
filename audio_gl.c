@@ -462,6 +462,15 @@ static void help(void) {
 
 
 static int init2(int argc, char **argv) {
+    // set up default values first
+    config.audio_backend_buffer_desired_length = 1.0;
+    config.audio_backend_latency_offset = (float)(-2*N)/44100;
+
+    // get settings from settings file
+    // do the "general" audio  options. Note, these options are in the "general" stanza!
+    parse_general_audio_options();
+
+
     optind = 1; // optind=0 is equivalent to optind=1 plus special behaviour
     argv--;     // so we shift the arguments to satisfy getopt()
     argc++;
