@@ -271,47 +271,8 @@ AC_ARG_WITH(gl, [  --with-gl = choose OpenGL|ES API support.], [
   HAS_GL=1
   AC_DEFINE([CONFIG_GL], 1, [Needed by the compiler.])
   AC_CHECK_LIB([fftw3f], [fftwf_malloc], , AC_MSG_ERROR(OpenGL|ES support requires the libfftw3-dev library!))
-  AC_CHECK_LIB([GLESv2], [glActiveTexture], , AC_MSG_ERROR(OpenGL|ES support requires the GLESv2 library!))
-  AC_CHECK_LIB([EGL], [eglTerminate], , AC_MSG_ERROR(OpenGL|ES support requires the EGL library!))
-  AC_CHECK_LIB([bcm_host], [vc_dispmanx_element_add], , AC_MSG_ERROR(OpenGL|ES support requires the bcm_host library!))
-  AC_CHECK_LIB([png], [png_create_info_struct], , AC_MSG_ERROR(OpenGL|ES support requires the libpng-dev library!))
-  AC_CHECK_LIB([jpeg], [jpeg_finish_compress], , AC_MSG_ERROR(OpenGL|ES support requires the libjpeg9-dev library!))], )
-AM_CONDITIONAL([USE_GL], [test "x$HAS_GL" = "x1"])
-
-# Look for hue flag
-AC_ARG_WITH(hue, [  --with-hue = choose hue API support.], [
-  AC_MSG_RESULT(>>Including a hue back end.)
-  HAS_HUE=1
-  AC_DEFINE([CONFIG_HUE], 1, [Needed by the compiler.])
-  AC_CHECK_LIB([fftw3f], [fftwf_malloc], , AC_MSG_ERROR(hue support requires the libfftw3-dev library!))
-  AC_CHECK_LIB([curl], [curl_easy_init], , AC_MSG_ERROR(hue support requires the libcurl4-openssl-dev library!))], )
-AM_CONDITIONAL([USE_HUE], [test "x$HAS_HUE" = "x1"])
-
-# Look for i2c flag
-AC_ARG_WITH(i2c, [  --with-i2c = choose I2C API support.], [
-  AC_MSG_RESULT(>>Including a I2C back end.)
-  HAS_I2C=1
-  AC_DEFINE([CONFIG_I2C], 1, [Needed by the compiler.])
-  AC_CHECK_LIB([fftw3f], [fftwf_malloc], , AC_MSG_ERROR(I2C support requires the libfftw3-dev library!))], )
-AM_CONDITIONAL([USE_I2C], [test "x$HAS_I2C" = "x1"])
-
-# Look for spp flag
-AC_ARG_WITH(spp, [  --with-spp = choose Bluetooth SPP API support.], [
-AC_MSG_RESULT(>>Including a Bluetooth SPP back end.)
-HAS_SPP=1
-AC_DEFINE([CONFIG_SPP], 1, [Needed by the compiler.])
-AC_CHECK_LIB([fftw3f], [fftwf_malloc], , AC_MSG_ERROR(Bluetooth SPP support requires the libfftw3-dev library!))
-AC_CHECK_LIB([bluetooth], [bt_free], , AC_MSG_ERROR(Bluetooth SPP support requires the libbluetooth-dev library!))], )
-AM_CONDITIONAL([USE_SPP], [test "x$HAS_SPP" = "x1"])
-
-# Look for GL flag
-AC_ARG_WITH(gl, [  --with-gl = choose OpenGL|ES API support.], [
-  AC_MSG_RESULT(>>Including a OpenGL|ES back end.)
-  HAS_GL=1
-  AC_DEFINE([CONFIG_GL], 1, [Needed by the compiler.])
-  AC_CHECK_LIB([fftw3f], [fftwf_malloc], , AC_MSG_ERROR(OpenGL|ES support requires the libfftw3-dev library!))
-  AC_CHECK_LIB([GLESv2], [glActiveTexture], , AC_MSG_ERROR(OpenGL|ES support requires the GLESv2 library!))
-  AC_CHECK_LIB([EGL], [eglTerminate], , AC_MSG_ERROR(OpenGL|ES support requires the EGL library!))
+  AC_CHECK_LIB([brcmGLESv2], [glActiveTexture], , AC_MSG_ERROR(OpenGL|ES support requires the GLESv2 library!))
+  AC_CHECK_LIB([brcmEGL], [eglTerminate], , AC_MSG_ERROR(OpenGL|ES support requires the EGL library!))
   AC_CHECK_LIB([bcm_host], [vc_dispmanx_element_add], , AC_MSG_ERROR(OpenGL|ES support requires the bcm_host library!))
   AC_CHECK_LIB([png], [png_create_info_struct], , AC_MSG_ERROR(OpenGL|ES support requires the libpng-dev library!))
   AC_CHECK_LIB([jpeg], [jpeg_finish_compress], , AC_MSG_ERROR(OpenGL|ES support requires the libjpeg9-dev library!))], )

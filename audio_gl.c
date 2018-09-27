@@ -191,6 +191,8 @@ static char s_metaArtist[256] = { '\0' };
 static char s_metaAlbum[256] = { '\0' };
 static char *s_metaArtwork = NULL;
 static size_t s_metaArtworkSize = 0;
+static volatile bool s_hasMetaChanged = false;
+static volatile bool s_hasMetaArtworkChanged = false;
 
 
 static void *metaDataThread(void *argument) {
@@ -288,15 +290,15 @@ static void *metaDataThread(void *argument) {
             // https://code.google.com/p/ytrack/wiki/DMAP
             switch (code) {
                 case 'asal':
-                    strncpy(s_metaAlbum, payload, 255);
+                    strncpy(s_metaAlbum, payload ? payload : "", 255);
                     break;
 
                 case 'asar':
-                    strncpy(s_metaArtist, payload, 255);
+                    strncpy(s_metaArtist, payload ? payload : "", 255);
                     break;
 
                 case 'minm':
-                    strncpy(s_metaTitle, payload, 255);
+                    strncpy(s_metaTitle, payload ? payload : "", 255);
                     break;
 
                 case 'PICT':
@@ -307,7 +309,8 @@ static void *metaDataThread(void *argument) {
                         memset(s_metaArtwork, 0, ARTWORK_SIZE_MAX);
                         s_metaArtworkSize = 0;
                     }
-                    
+
+                    s_hasMetaArtworkChanged = true;
                     break;
 
                 default:
@@ -317,6 +320,8 @@ static void *metaDataThread(void *argument) {
             if (payload) {
                 free(payload);
             }
+
+            s_hasMetaChanged = true;
         }
 
         // flush stdout, to be able to pipe it later
@@ -340,7 +345,7 @@ static void doit() {
         fftwf_execute(p);
 
         for (i = 0; i < N / 2 + 1; i++) {
-            outL[i] = cabsf(out[i]) / (float)(N * SHRT_MAX);
+            outL[i] = cabsf(out[i]) / (float)((N / 2) * SHRT_MAX);
             outL[i] = 2 * cbrt(outL[i]);
             outL[i] = smoothstepf(0, 1, outL[i] * 1.5f - 0.5f);
         }
@@ -355,7 +360,7 @@ static void doit() {
         fftwf_execute(p);
 
         for (i = 0; i < N / 2 + 1; i++) {
-            outR[i] = cabsf(out[i]) / (float)(N * SHRT_MAX);
+            outR[i] = cabsf(out[i]) / (float)((N / 2) * SHRT_MAX);
             outR[i] = 2 * cbrt(outR[i]);
             outR[i] = smoothstepf(0, 1, outR[i] * 1.5f - 0.5f);
         }
@@ -367,7 +372,7 @@ static void doit() {
         int i;
 
         for (i = 0; i < 68; i++) {
-            bla[2 * i] = clampf(outL[i], 0, 1);
+            bla[2 * i + 0] = clampf(outL[i], 0, 1);
         }
 
         for (i = 0; i < 68; i++) {
@@ -387,6 +392,7 @@ static size_t prevArtworkSize = 0;
 
 static void updateNowPlaying() {
     bool update = false;
+    bool isSameAlbum = true;
 
     if (strcmp(s_metaTitle, prevTitle) != 0) {
         update = true;
@@ -398,9 +404,11 @@ static void updateNowPlaying() {
     
     if (strcmp(s_metaAlbum, prevAlbum) != 0) {
         update = true;
+        isSameAlbum = false;
     }
 
     if (update) {
+        update = false;
         if (s_metaTitle) {
             strncpy(prevTitle, s_metaTitle, 255);
         } else {
@@ -429,45 +437,17 @@ static void updateNowPlaying() {
         snprintf(nowPlaying, 2048, "%s\n%s\n%s", title, artist, album);
 
         setString(nowPlaying);
-        setArtwork(NULL, 0);
+
+        if (!isSameAlbum) {
+            setArtwork(NULL, 0);
+        }
     }
 
-    if ((prevArtworkSize != s_metaArtworkSize) || (s_metaArtwork && prevArtwork && (strncmp(s_metaArtwork, prevArtwork, 128) != 0))) {
+    if (s_hasMetaArtworkChanged) {
+        s_hasMetaArtworkChanged = false;
         memcpy(prevArtwork, s_metaArtwork, s_metaArtworkSize);
         prevArtworkSize = s_metaArtworkSize;
-        setArtwork(prevArtwork, prevArtworkSize);
-        update = true;
-    }
-
-    if (update) {
-        if (s_metaTitle) {
-            strncpy(prevTitle, s_metaTitle, 255);
-        } else {
-            prevTitle[0] = '-';
-            prevTitle[1] = '\0';
-        }
-
-        if (s_metaArtist) {
-            strncpy(prevArtist, s_metaArtist, 255);
-        } else {
-            prevArtist[0] = '-';
-            prevArtist[1] = '\0';
-        }
-
-        if (s_metaAlbum) {
-            strncpy(prevAlbum, s_metaAlbum, 255);
-        } else {
-            prevAlbum[0] = '-';
-            prevAlbum[1] = '\0';
-        }
-
-        const char *title = (prevTitle[0]) ? prevTitle : "-";
-        const char *artist = (prevArtist[0]) ? prevArtist : "-";
-        const char *album = (prevAlbum[0]) ? prevAlbum : "-";
-        char nowPlaying[2048];
-        snprintf(nowPlaying, 2048, "%s\n%s\n%s", title, artist, album);
-
-        setString(nowPlaying);
+        setArtwork((prevArtworkSize) ? prevArtwork : NULL, prevArtworkSize);
     }
 }
 
@@ -509,7 +489,7 @@ static int init2(int argc, char **argv) {
 
 
     // FFT
-    static const char wisdomString[] = "(fftw-3.3.4 fftwf_wisdom #xca4daf64 #xc8f59ea6 #x586875c9 #x14018994"
+    static const char wisdomString[] = "(fftw-3.3.5 fftwf_wisdom #xca4daf64 #xc8f59ea6 #x586875c9 #x14018994"
                                        "  (fftwf_codelet_r2cf_32 0 #x1040 #x1040 #x0 #xf0a3d344 #x13d3ea67 #x6c559355 #xb97dd65d)"
                                        "  (fftwf_codelet_hc2cf_32 0 #x1040 #x1040 #x0 #xe9ef8750 #xcfc97096 #xf9e7e48d #x6e5a4034)"
                                        "  (fftwf_codelet_r2cfII_32 2 #x1040 #x1040 #x0 #x328c26e0 #xd5defb3b #x3f890bcb #xae29c390)"
@@ -549,6 +529,7 @@ static int init2(int argc, char **argv) {
         prevArtwork = malloc(ARTWORK_SIZE_MAX);
         s_metaArtwork = malloc(ARTWORK_SIZE_MAX);
         assert(prevArtwork);
+        assert(s_metaArtwork);
     }
 
 #endif
@@ -634,13 +615,22 @@ static void play(short buf[], int samples) {
         i++;
     }
 
-    updateNowPlaying();
+    if (s_hasMetaChanged) {
+        s_hasMetaChanged = false;
+        updateNowPlaying();
+    }
 }
 
 
 static void stop(void) {
     setIdle(true);
     printf("OpenGL|ES stopped\n");
+}
+
+
+static int delay(long *the_delay) {
+    *the_delay = 2 * N;
+    return 0;
 }
 
 
@@ -652,7 +642,7 @@ audio_output audio_gl = {
     .start = &start,
     .stop = &stop,
     .flush = &flush,
-    .delay = NULL,
+    .delay = &delay,
     .play = &play,
     .volume = NULL,
     .parameters = NULL,

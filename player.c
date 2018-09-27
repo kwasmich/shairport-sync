@@ -1202,14 +1202,14 @@ static inline int32_t mean_32(int32_t a, int32_t b) {
 }
 
 
-inline int32_t min(int32_t a, int32_t b, int32_t c) {
+static inline int32_t min(int32_t a, int32_t b, int32_t c) {
     if (b < a) a = b;
     if (c < a) a = c;
     return a;
 }
 
 
-inline int32_t max(int32_t a, int32_t b, int32_t c) {
+static inline int32_t max(int32_t a, int32_t b, int32_t c) {
     if (b > a) a = b;
     if (c > a) a = c;
     return a;

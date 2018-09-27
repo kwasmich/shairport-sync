@@ -27,7 +27,7 @@ Required:
 
 
 Debian/Raspbian users can get the basics with
-`apt-get install libssl-dev libavahi-client-dev libasound2-dev libcurl4-openssl-dev libfftw3-dev libdaemon-dev libpopt-dev libconfig-dev libsoxr-dev libjpeg9-dev libbluetooth-dev`
+`sudo apt install git autoconf libssl-dev libavahi-client-dev libasound2-dev libcurl4-openssl-dev libfftw3-dev libdaemon-dev libpopt-dev libconfig-dev libsoxr-dev libjpeg9-dev libbluetooth-dev`
 
 Since the OpenGL|ES 2 code is bound to the VideoCore IV of the Raspberry Pi you may want to opt out this part from the configure script.
 
