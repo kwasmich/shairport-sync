@@ -425,7 +425,7 @@ static void stop(void) {
     int i = 0;
 
     //fprintf( stderr, "Restore light settings!\n" );
-    sprintf(curlRequestBuffer, "{ \"on\":true, \"bri\":144, \"ct\":467, \"effect\":\"none\" }");
+    sprintf(curlRequestBuffer, "{ \"on\":true, \"bri\":0, \"ct\":467, \"effect\":\"none\" }");
 
     for (i = 0; i < hueLampCount; i++) {
         curl_easy_perform(curlHue[i]);
