@@ -337,6 +337,15 @@ static void help(void) {
 
 
 static int init(int argc, char **argv) {
+    // set up default values first
+    config.audio_backend_buffer_desired_length = 1.0;
+    config.audio_backend_latency_offset = (float)(-2*N)/44100;
+
+    // get settings from settings file
+    // do the "general" audio  options. Note, these options are in the "general" stanza!
+    parse_general_audio_options();
+
+
     optind = 1; // optind=0 is equivalent to optind=1 plus special behaviour
     argv--;     // so we shift the arguments to satisfy getopt()
     argc++;
@@ -368,7 +377,7 @@ static int init(int argc, char **argv) {
 
 
     // FFT
-    static const char wisdomString[] = "(fftw-3.3.4 fftwf_wisdom #xca4daf64 #xc8f59ea6 #x586875c9 #x14018994"
+    static const char wisdomString[] = "(fftw-3.3.5 fftwf_wisdom #xca4daf64 #xc8f59ea6 #x586875c9 #x14018994"
     "  (fftwf_codelet_r2cf_32 0 #x1040 #x1040 #x0 #xf0a3d344 #x13d3ea67 #x6c559355 #xb97dd65d)"
     "  (fftwf_codelet_hc2cf_32 0 #x1040 #x1040 #x0 #xe9ef8750 #xcfc97096 #xf9e7e48d #x6e5a4034)"
     "  (fftwf_codelet_r2cfII_32 2 #x1040 #x1040 #x0 #x328c26e0 #xd5defb3b #x3f890bcb #xae29c390)"
@@ -476,6 +485,13 @@ static void stop(void) {
 
 
 
+static int delay(long *the_delay) {
+    *the_delay = 2 * N;
+    return 0;
+}
+
+
+
 audio_output audio_spp = {
     .name = "spp",
     .help = &help,
@@ -484,7 +500,7 @@ audio_output audio_spp = {
     .start = &start,
     .stop = &stop,
     .flush = &flush,
-    .delay = NULL,
+    .delay = &delay,
     .play = &play,
     .volume = NULL,
     .parameters = NULL,
