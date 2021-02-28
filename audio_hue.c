@@ -316,7 +316,7 @@ static int init(int argc, char **argv) {
 
     fftwf_import_system_wisdom();
     p = fftwf_plan_dft_r2c_1d(N, in, out, FFTW_ESTIMATE);   //FFTW_MEASURE
-    fputs( fftwf_export_wisdom_to_string(), stderr );
+    // fputs( fftwf_export_wisdom_to_string(), stderr );
 
     // HUE
     audio.value = 0;
