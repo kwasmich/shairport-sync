@@ -309,22 +309,14 @@ static int init(int argc, char **argv) {
     lamp = malloc(sizeof(lamp_t) * hueLampCount);
 
     // FFT
-    static const char wisdomString[] = "(fftw-3.3.5 fftwf_wisdom #xca4daf64 #xc8f59ea6 #x586875c9 #x14018994"
-                                       "  (fftwf_codelet_r2cf_32 0 #x1040 #x1040 #x0 #xf0a3d344 #x13d3ea67 #x6c559355 #xb97dd65d)"
-                                       "  (fftwf_codelet_hc2cf_32 0 #x1040 #x1040 #x0 #xe9ef8750 #xcfc97096 #xf9e7e48d #x6e5a4034)"
-                                       "  (fftwf_codelet_r2cfII_32 2 #x1040 #x1040 #x0 #x328c26e0 #xd5defb3b #x3f890bcb #xae29c390)"
-                                       "  (fftwf_rdft_vrank_geq1_register 1 #x1040 #x1040 #x0 #x24270b46 #x2c4e5fb2 #x7c394654 #x3261a5dd)"
-                                       "  (fftwf_codelet_r2cf_32 2 #x1040 #x1040 #x0 #xbfa7b557 #xfc0285f7 #xc081451b #xd3d93d06)"
-                                       ")";
-
     in = (float *) fftwf_malloc(sizeof(float) * N);
     out = (fftwf_complex *) fftwf_malloc(sizeof(fftwf_complex) * N);
     outL = (float *) malloc(sizeof(float) * (N / 2 + 1));
     outR = (float *) malloc(sizeof(float) * (N / 2 + 1));
 
-    fftwf_import_wisdom_from_string(wisdomString);
-    p = fftwf_plan_dft_r2c_1d(N, in, out, FFTW_EXHAUSTIVE);   //FFTW_MEASURE
-    //fputs( fftwf_export_wisdom_to_string(), stderr );
+    fftwf_import_system_wisdom();
+    p = fftwf_plan_dft_r2c_1d(N, in, out, FFTW_ESTIMATE);   //FFTW_MEASURE
+    // fputs( fftwf_export_wisdom_to_string(), stderr );
 
     // HUE
     audio.value = 0;
